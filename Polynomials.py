@@ -11,14 +11,17 @@ class Polynomial:
 
 # terms, coefficients, indeterminates, exponents
 
+PLACEHOLDER = "PLACEHOLDER"
+
+
 class Monomial:
-    def __init__(self, indeterminate=None):
+    def __init__(self, indeterminate):
         self.degree = 1
-        self.indeterminates = []
-        self.exponents = {}
-        if indeterminate is not None:  # used when defining an indeterminate
-            self.indeterminates.append(indeterminate)
-            self.exponents[indeterminate] = 1
+        self.indeterminates = [indeterminate]
+        self.exponents = {indeterminate: 1}
+
+    def get_degree(self):
+        return copy.copy(self.degree)  # calling copy might help if the class is extended to include noninteger degrees
 
     def get_exponents(self):
         return self.exponents.copy()
@@ -77,15 +80,16 @@ class Monomial:
 
     def __mul__(self, other):  # we do not handle coefficients, including 0
         if isinstance(other, Monomial):  # multiply monomials
-            out_monomial = Monomial()
+            out_monomial = Monomial(PLACEHOLDER)
             out_monomial.indeterminates = sorted(list(set(self.indeterminates + other.indeterminates)))
-            for x in out_monomial.indeterminates:
-                out_monomial.exponents[x] = self.exponents.get(x, 0) + other.exponents.get(x, 0)
+            out_monomial.exponents = {x: self.exponents.get(x, 0) + other.exponents.get(x, 0) for x in
+                                      out_monomial.indeterminates}
             out_monomial.degree = sum(out_monomial.exponents.values())
             return out_monomial
         elif other == 0:
             return 0
-        elif isinstance(other, (int, float, complex)):  # multiplying a monomial by a constant just gives you the monomial
+        elif isinstance(other,
+                        (int, float, complex)):  # multiplying a monomial by a constant just gives you the monomial
             return copy.copy(self)
         else:
             raise TypeError("cannot multiply Monomial by type " + str(type(other)))
@@ -109,7 +113,8 @@ class Monomial:
         else:
             raise TypeError("Cannot raise Monomial to a power of type " + str(type(power)))
 
-    def __divmod__(self, other):  # remainder will be 0, 1, or a monomial. we do not work with coefficients in this class
+    def __divmod__(self,
+                   other):  # remainder will be 0, 1, or a monomial. we do not work with coefficients in this class
         if isinstance(other, Monomial):  # divide monomials
             if self == other:
                 return 1, 0  # using 1 for the remainder since it's the multiplicative identity
@@ -118,12 +123,13 @@ class Monomial:
             else:
                 for i in self.exponents:
                     print(i)
-                out_exponents = {x: (self.exponents.get(x,0) - other.exponents.get(x,0)) for x in self.exponents}
+                out_exponents = {x: (self.exponents.get(x, 0) - other.exponents.get(x, 0)) for x in self.exponents}
                 print(out_exponents)
-                if [x for x in out_exponents.values() if x < 0] or [x for x in other.exponents if x not in self.exponents]:
+                if [x for x in out_exponents.values() if x < 0] or [x for x in other.exponents if
+                                                                    x not in self.exponents]:
                     return 0, copy.copy(self)
                 else:
-                    out_monomial = Monomial()
+                    out_monomial = Monomial(PLACEHOLDER)
                     out_monomial.indeterminates = [x for x in out_exponents if out_exponents[x] > 0]
                     out_monomial.exponents = {x: y for x, y in out_exponents.items() if y > 0}
                     out_monomial.degree = sum(out_monomial.exponents.values())
@@ -159,7 +165,7 @@ class Monomial:
             if out_coefficient == 0:
                 return 0, 0
             else:
-                out_monomial = Monomial()
+                out_monomial = Monomial(PLACEHOLDER)
                 out_monomial.indeterminates = [x for x in self.indeterminates if x not in substitutions]
                 out_monomial.exponents = {x: self.exponents[x] for x in out_monomial.indeterminates}
                 out_monomial.degree = sum(out_monomial.exponents.values())
@@ -169,9 +175,3 @@ class Monomial:
                     return out_monomial, out_coefficient
 
 
-x = Monomial('x')
-y = Monomial('y')
-p = 3
-q = x
-
-print(p, " ÷ ", q, " = ", divmod(p, q))
