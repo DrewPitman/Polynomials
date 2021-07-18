@@ -4,26 +4,43 @@ You can just define indeterminates and do math
 with them.
 
 ## Monomial class
-Not generally meant for user interaction. 
-This class handles individual monomials.
+This class handles individual monomials without coefficients,
+i.e., power products.
+We will let the Polynomial class deal with coefficients.  
+The class has 3 attributes, which are self-explanatory:
+* **degree**; an integer representing the total degree of the monomial 
+* **indeterminates**; a list of strings naming the monomial's indeterminates
+* **exponents**; a dictionary whose keys are indeterminate names 
+  and whose values are the powers of each indeterminate
 
-Does not include addition or subtraction, 
-since monomials are not closed under these operations
-(the result is a polynomial).
+These can be accessed with *get_** methods.
 
-objects from the Monomial class represent
-power products, i.e. monomials without coefficients.
-We will let the Polynomial class deal with coefficients
-
-Monomials have 3 attributes:
-    **degree, indeterminates,** and **exponents**
-
+### usage notes
 Monomials must always be initialized with an indeterminate.
+users
+This class does not include addition or subtraction, 
+since the set of monomials is not closed under these operations.
 
-**divmod** behaves oddly with Monomials.
-Since we do not include coefficients, dividing
-a constant other than 0 by a Monomial will result in
-a remainder of 1.
+*divmod* behaves strangely with Monomials.
+Since we do not include coefficients, dividing a constant other than 0 
+by a Monomial will result in a remainder of 1.
+The quotient will be 0 if the dividend is not divisible by the divisor.
+The remainder will be 0 or self in all cases.
+The modulus operators are also based on *divmod.*
 
+## Polynomial class
+This class handles polynomials in any number of variables.
+
+This class has two attributes:
+* **constant**; the polynomial's constant term
+* **terms**; a list of monomial, coefficient pairs 
+  representing the rest of the polynomial's terms
+
+
+### usage notes
+Polynomials must always be initialized with an indeterminate.
+The purpose of this is so that users can make polynomials by first defining 
+indeterminates then operating on them with addition, multiplication, and 
+exponentiation.
 
 
