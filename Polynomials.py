@@ -93,7 +93,7 @@ class Monomial:
             return copy.deepcopy(self)
         elif isinstance(power, int) and power > 1:
             out_monomial = copy.deepcopy(self)
-            # just multiply the indeterminates' exponenets by the power
+            # just multiply the indeterminates' exponents by the power
             out_monomial.exponents = {x: power * y for x, y in self.exponents.items()}
             if modulo is not None:
                 out_monomial = divmod(out_monomial, modulo)[1]
@@ -145,6 +145,9 @@ class Monomial:
 
     def __rmod__(self, other):
         return self.__rdivmod__(other)[1]
+
+    def __hash__(self):
+        return hash((self.degree, tuple(self.indeterminates), tuple(self.exponents)))
 
     def __repr__(self):  # represent monomials in terms of common mathematical notation
         repr_list = [x + "^" + str(self.exponents[x]) if self.exponents[x] != 1 else x for x in self.indeterminates]
@@ -203,8 +206,8 @@ class Polynomial:
             monomial_list = sorted(list(set([x[0] for x in self.terms + other.terms])))
             self_dict = dict(self.terms)
             other_dict = dict(other.terms)
-            out_polynomial.terms = [(x, self_dict[x] + other_dict[x]) for x in monomial_list
-                                    if self_dict[x] + other_dict != 0]
+            out_polynomial.terms = [(x, self_dict.get(x, 0) + other_dict.get(x, 0)) for x in monomial_list
+                                    if self_dict.get(x, 0) + other_dict.get(x, 0) != 0]
             if not out_polynomial.terms:
                 return out_polynomial.constant
             else:
@@ -248,12 +251,25 @@ class Polynomial:
         pass
 
     def __repr__(self):
-        pass
+        # term_list = self.terms.copy()
+        repr_list = [str(abs(x[1])) + " * " + x[0].__repr__() if x[1] not in [1, -1] else x[0].__repr__()
+                     for x in self.get_terms()]
+        repr_str = ""
+        if self.terms[-1] < 0:
+            repr_str += "-"
+        repr_str += repr_list.pop()
+        while repr_list:
+            pass
+
 
     def evaluate(self, substitutions=None):
         pass
 
 
-a = [('a', 1), ('b', 2)]
-b = dict(a)
-print(a, b)
+t = Polynomial('t')
+s = Polynomial('s')
+p = t + s
+
+a = [1, 2, 3]
+b = list(reversed(a))
+print()
