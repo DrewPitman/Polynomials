@@ -1,16 +1,6 @@
 import copy
 import math
 
-
-class Polynomial:
-    def __init__(self, indeterminate=None):
-        self.terms = []  # monomials and constants
-        if indeterminate is not None:
-            self.terms.append(Monomial(indeterminate))
-
-
-# terms, coefficients, indeterminates, exponents
-
 PLACEHOLDER = "PLACEHOLDER"
 
 
@@ -18,10 +8,10 @@ class Monomial:
     def __init__(self, indeterminate):
         self.degree = 1
         self.indeterminates = [indeterminate]
-        self.exponents = {indeterminate: 1}
+        self.exponents = {indeterminate: 1}  # holds as values the power of each indeterminate
 
     def get_degree(self):
-        return copy.copy(self.degree)  # calling copy might help if the class is extended to include noninteger degrees
+        return copy.deepcopy(self.degree)  # deepcopy might help if the class is extended to include non-integer degrees
 
     def get_exponents(self):
         return self.exponents.copy()
@@ -29,7 +19,7 @@ class Monomial:
     def get_indeterminates(self):
         return self.indeterminates.copy()
 
-    def __eq__(self, other):
+    def __eq__(self, other):  # two objects with the same attributes are equal
         if isinstance(other, Monomial):
             if self.degree != other.degree:  # potentially time-saving
                 return False
@@ -38,7 +28,7 @@ class Monomial:
         else:
             return False
 
-    def __gt__(self, other):  # we use GRevLex order
+    def __gt__(self, other):  # monomials are in GRevLex order
         if isinstance(other,
                       (int, float, complex)):  # we assume that constants are never represented by Monomial objects
             return True
@@ -47,7 +37,7 @@ class Monomial:
                 return False
             elif self.degree != other.degree:
                 return self.degree > other.degree
-            else:  # we compare monomials of the same degree by comparing the exponents of the last indeterminates lexicographically
+            else:  # compare same degree monomials by exponents of the latest indeterminates lexicographically
                 self_variables = self.get_indeterminates()
                 other_variables = other.get_indeterminates()
                 while self_variables:
@@ -78,32 +68,32 @@ class Monomial:
         else:
             return self < other
 
-    def __mul__(self, other):  # we do not handle coefficients, including 0
-        if isinstance(other, Monomial):  # multiply monomials
+    def __mul__(self, other):  # we do not handle coefficients, except 0
+        if isinstance(other, Monomial):  # multiply two monomials
             out_monomial = Monomial(PLACEHOLDER)
             out_monomial.indeterminates = sorted(list(set(self.indeterminates + other.indeterminates)))
-            out_monomial.exponents = {x: self.exponents.get(x, 0) + other.exponents.get(x, 0) for x in
-                                      out_monomial.indeterminates}
+            out_monomial.exponents = {x: self.exponents.get(x, 0) + other.exponents.get(x, 0)
+                                      for x in out_monomial.indeterminates}
             out_monomial.degree = sum(out_monomial.exponents.values())
             return out_monomial
         elif other == 0:
             return 0
-        elif isinstance(other,
-                        (int, float, complex)):  # multiplying a monomial by a constant just gives you the monomial
-            return copy.copy(self)
+        elif isinstance(other, (int, float, complex)):  # multiplying a monomial by a constant
+            return copy.deepcopy(self)
         else:
             raise TypeError("cannot multiply Monomial by type " + str(type(other)))
 
     def __rmul__(self, other):  # monomial multiplication is commutative
         return self * other
 
-    def __pow__(self, power, modulo=None):  # add stuff for modulo. May not be useful for this class, though.
+    def __pow__(self, power, modulo=None):
         if power == 0:
             return 1
         elif power == 1:
-            return copy.copy(self)
+            return copy.deepcopy(self)
         elif isinstance(power, int) and power > 1:
-            out_monomial = copy.copy(self)
+            out_monomial = copy.deepcopy(self)
+            # just multiply the indeterminates' exponenets by the power
             out_monomial.exponents = {x: power * y for x, y in self.exponents.items()}
             if modulo is not None:
                 out_monomial = divmod(out_monomial, modulo)[1]
@@ -113,13 +103,14 @@ class Monomial:
         else:
             raise TypeError("Cannot raise Monomial to a power of type " + str(type(power)))
 
-    def __divmod__(self,
-                   other):  # remainder will be 0, 1, or a monomial. we do not work with coefficients in this class
+    def __divmod__(self, other):
+        # quotient will be 0 if self is not divisible by other
+        # remainder will be 0 or self in all cases
         if isinstance(other, Monomial):  # divide monomials
             if self == other:
-                return 1, 0  # using 1 for the remainder since it's the multiplicative identity
+                return 1, 0
             elif self < other:
-                return 0, copy.copy(self)
+                return 0, copy.deepcopy(self)
             else:
                 for i in self.exponents:
                     print(i)
@@ -127,7 +118,7 @@ class Monomial:
                 print(out_exponents)
                 if [x for x in out_exponents.values() if x < 0] or [x for x in other.exponents if
                                                                     x not in self.exponents]:
-                    return 0, copy.copy(self)
+                    return 0, copy.deepcopy(self)
                 else:
                     out_monomial = Monomial(PLACEHOLDER)
                     out_monomial.indeterminates = [x for x in out_exponents if out_exponents[x] > 0]
@@ -137,7 +128,7 @@ class Monomial:
         elif other == 0:
             raise ZeroDivisionError("Cannot divide by 0")
         elif isinstance(other, (int, float, complex)):  # divide by a constant
-            return copy.copy(self), 0
+            return copy.deepcopy(self), 0
         else:
             raise TypeError("monomials cannot be divided by type " + str(type(other)))
 
@@ -149,16 +140,23 @@ class Monomial:
         else:
             raise TypeError("Cannot divide object of type" + str(type(other)) + "by a Monomial")
 
-    def __repr__(self):
+    def __mod__(self, other):
+        return self.__divmod__(other)[1]
+
+    def __rmod__(self, other):
+        return self.__rdivmod__(other)[1]
+
+    def __repr__(self):  # represent monomials in terms of common mathematical notation
         repr_list = [x + "^" + str(self.exponents[x]) if self.exponents[x] != 1 else x for x in self.indeterminates]
         return " * ".join(repr_list)
 
     def evaluate(self, substitutions=None):  # returns an ordered pair with a monomial or 1 and a coefficient
         # substitutions should be a dictionary
         if substitutions is None:
-            return copy.copy(self), 1
+            return copy.deepcopy(self), 1
         elif not isinstance(substitutions, dict):
-            raise TypeError("'substitions' should be of type " + str(dict) + " rather than " + str(type(substitutions)))
+            raise TypeError(
+                "'substitutions' should be of type " + str(dict) + " rather than " + str(type(substitutions)))
         else:
             out_coefficient = math.prod(
                 [substitutions[x] ** self.exponents[x] for x in self.indeterminates if x in substitutions])
@@ -175,3 +173,87 @@ class Monomial:
                     return out_monomial, out_coefficient
 
 
+class Polynomial:
+    def __init__(self, indeterminate):
+        self.constant = 0
+        self.terms = [(Monomial(indeterminate), 1)]  # list of terms of the form (monomial, coefficient)
+
+    def get_terms(self):
+        return self.terms.copy()
+
+    def __eq__(self, other):
+        pass
+
+    def __gt__(self, other):
+        pass
+
+    def __ge__(self, other):
+        pass
+
+    def __lt__(self, other):
+        pass
+
+    def __le__(self, other):
+        pass
+
+    def __add__(self, other):
+        if isinstance(other, Polynomial):
+            out_polynomial = Polynomial(PLACEHOLDER)
+            out_polynomial.constant = self.constant + other.constant
+            monomial_list = sorted(list(set([x[0] for x in self.terms + other.terms])))
+            self_dict = dict(self.terms)
+            other_dict = dict(other.terms)
+            out_polynomial.terms = [(x, self_dict[x] + other_dict[x]) for x in monomial_list
+                                    if self_dict[x] + other_dict != 0]
+            if not out_polynomial.terms:
+                return out_polynomial.constant
+            else:
+                out_polynomial.terms.sort()
+                return out_polynomial
+        elif isinstance(other, (int, float, complex)):
+            out_polynomial = copy.deepcopy(self)
+            out_polynomial.constant += other
+            return out_polynomial
+        else:
+            raise TypeError("Cannot add polynomial to an object of type " + str(type(other)))
+
+    def __radd__(self, other):
+        return self + other
+
+    def __sub__(self, other):
+        return self + -1 * other
+
+    def __rsub__(self, other):
+        return -1 * self + other
+
+    def __mul__(self, other):
+        pass
+
+    def __rmul__(self, other):
+        pass
+
+    def __pow__(self, power, modulo=None):
+        pass
+
+    def __divmod__(self, other):
+        pass
+
+    def __rdivmod__(self, other):
+        pass
+
+    def __mod__(self, other):
+        pass
+
+    def __rmod__(self, other):
+        pass
+
+    def __repr__(self):
+        pass
+
+    def evaluate(self, substitutions=None):
+        pass
+
+
+a = [('a', 1), ('b', 2)]
+b = dict(a)
+print(a, b)
