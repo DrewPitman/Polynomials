@@ -8,7 +8,6 @@ This class handles individual monomials without coefficients,
 i.e., power products.
 We will let the Polynomial class deal with coefficients.  
 The class has 3 attributes, which are self-explanatory:
-* **degree**; an integer representing the total degree of the monomial 
 * **indeterminates**; a list of strings naming the monomial's indeterminates
 * **exponents**; a dictionary whose keys are indeterminate names 
   and whose values are the powers of each indeterminate
