@@ -20,10 +20,7 @@ class Monomial:
 
     def __eq__(self, other):  # two objects with the same attributes are equal
         if isinstance(other, Monomial):
-            if self.get_degree() != other.get_degree():  # potentially time-saving
-                return False
-            else:
-                return self.exponents == other.exponents  # note that if exponents match, so will indeterminates
+            return self.exponents == other.exponents  # note that if exponents match, so will indeterminates
         else:
             return False
 
@@ -56,10 +53,7 @@ class Monomial:
             return self > other
 
     def __lt__(self, other):
-        if isinstance(other, Monomial):
-            return other > self
-        else:
-            return False
+        return not self >= other
 
     def __le__(self, other):
         if self == other:
@@ -146,6 +140,9 @@ class Monomial:
     def __hash__(self):
         return hash((tuple(self.indeterminates), tuple(self.exponents)))
 
+    def __copy__(self):
+        return copy.deepcopy(self)
+
     def __repr__(self):  # represent monomials in terms of common mathematical notation
         repr_list = [x + "^" + str(self.exponents[x]) if self.exponents[x] != 1 else x for x in self.indeterminates]
         return " * ".join(repr_list)
@@ -177,23 +174,49 @@ class Polynomial:
         self.constant = 0
         self.terms = [(Monomial(indeterminate), 1)]  # list of terms of the form (monomial, coefficient)
 
+    def get_degree(self):
+        return self.terms[-1][0].get_degree()
+
+    def get_constant(self):
+        return copy.deepcopy(self.constant)
+
     def get_terms(self):
         return self.terms.copy()
 
     def __eq__(self, other):
-        pass
+        if isinstance(other, Polynomial):
+            return self.constant == other.constant and self.terms == other.terms
+        else:
+            return False
 
-    def __gt__(self, other):
-        pass
+    def __gt__(self, other):  # polynomials are in GRevLex order
+        if isinstance(other, Polynomial):
+            if self.terms == other.terms:
+                return self.constant > other.constant
+            else:
+                s_terms = self.get_terms()
+                o_terms = other.get_terms()
+                while s_terms:
+                    if s_terms.pop() > o_terms.pop():
+                        return True
+                return False
+
+        elif isinstance(other, (int, float, complex)):
+            return True
+        else:
+            raise TypeError("cannot compare Polynomial with type " + str(type(other)))
 
     def __ge__(self, other):
-        pass
+        if self == other:
+            return True
+        else:
+            return self > other
 
     def __lt__(self, other):
-        pass
+        return not self >= other
 
     def __le__(self, other):
-        pass
+        return not self > other
 
     def __add__(self, other):
         if isinstance(other, Polynomial):
@@ -248,7 +271,21 @@ class Polynomial:
         return self * other
 
     def __pow__(self, power, modulo=None):
-        pass
+        if power == 0:
+            return 1
+        elif power == 1:
+            return copy.deepcopy(self)
+        elif isinstance(power, int) and power > 1:
+            out_polynomial = 1
+            for i in range(power):
+                out_polynomial *= self
+            if modulo is not None:
+                out_polynomial = divmod(out_polynomial, modulo)[1]
+            return out_polynomial
+        elif isinstance(power, int):
+            raise ValueError("Cannot raise Polynomial to a negative power")
+        else:
+            raise TypeError("Cannot raise Polynomial to a power of type " + str(type(power)))
 
     def __divmod__(self, other):
         pass
@@ -282,11 +319,15 @@ class Polynomial:
             repr_str += " + " + str(self.constant)
         return repr_str
 
+    def __copy__(self):
+        return copy.deepcopy(self)
+
     def evaluate(self, substitutions=None):
         pass
 
 
 t = Polynomial('t')
 s = Polynomial('s')
-p = t + s*t
-print(p)
+p = (t + (s**5*t)**2)**4
+q = copy.copy(p)
+print(p > t)
