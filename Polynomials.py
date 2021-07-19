@@ -301,7 +301,7 @@ class Polynomial:
 
     def __repr__(self):
         term_list = self.get_terms()
-        repr_list = [str(abs(x[1])) + " * " + x[0].__repr__() if x[1] not in [1, -1] else x[0].__repr__()
+        repr_list = [str(abs(x[1])) + " * " + x[0].__repr__() if x[1] not in (1, -1) else x[0].__repr__()
                      for x in term_list]  # get representations of monomials
         repr_str = ""
         if term_list.pop()[1] < 0:
@@ -323,11 +323,12 @@ class Polynomial:
         return copy.deepcopy(self)
 
     def evaluate(self, substitutions=None):
-        pass
-
-
-t = Polynomial('t')
-s = Polynomial('s')
-p = (t + (s**5*t)**2)**4
-q = copy.copy(p)
-print(p > t)
+        if substitutions is None:
+            return copy.deepcopy(self)
+        else:
+            out_polynomial = Polynomial(PLACEHOLDER)
+            out_polynomial.terms = [(x.evaluate(substitutions)[0], x.evaluate(substitutions)[1] * y)
+                                    for x, y in self.terms]
+            out_polynomial.constant = self.constant + sum([y for x, y in out_polynomial.terms if x == 1])
+            out_polynomial.terms = [(x,y) for x,y in out_polynomial.terms if x not in (0,1)]
+            return out_polynomial
