@@ -2,7 +2,8 @@ import copy
 import math
 
 PLACEHOLDER = "PLACEHOLDER"
-NUMTYPES = (int, float, complex)
+NUMBER_TYPES = (int, float, complex)
+
 
 # noinspection PyTypeChecker
 class Monomial:
@@ -26,8 +27,7 @@ class Monomial:
             return False
 
     def __gt__(self, other):  # monomials are in GRevLex order
-        if isinstance(other,
-                      NUMTYPES):  # we assume that constants are never represented by Monomial objects
+        if isinstance(other, NUMBER_TYPES):  # we assume that constants are never represented by Monomial objects
             return True
         elif isinstance(other, Monomial):
             if self == other:
@@ -71,7 +71,7 @@ class Monomial:
             return out_monomial
         elif other == 0:
             return 0
-        elif isinstance(other, NUMTYPES):  # multiplying a monomial by a constant
+        elif isinstance(other, NUMBER_TYPES):  # multiplying a monomial by a constant
             return copy.deepcopy(self)
         else:
             raise TypeError("cannot multiply Monomial by type " + str(type(other)))
@@ -116,7 +116,7 @@ class Monomial:
                     return out_monomial, 0
         elif other == 0:
             raise ZeroDivisionError("Cannot divide by 0")
-        elif isinstance(other, NUMTYPES):  # divide by a constant
+        elif isinstance(other, NUMBER_TYPES):  # divide by a constant
             return copy.deepcopy(self), 0
         else:
             raise TypeError("monomials cannot be divided by type " + str(type(other)))
@@ -124,7 +124,7 @@ class Monomial:
     def __rdivmod__(self, other):  # should only be called if we divide a number by a monomial
         if other == 0:
             return 0, 0
-        elif isinstance(other, NUMTYPES):
+        elif isinstance(other, NUMBER_TYPES):
             return 0, 1
         else:
             raise TypeError("Cannot divide object of type" + str(type(other)) + "by a Monomial")
@@ -200,7 +200,7 @@ class Polynomial:
                         return True
                 return False
 
-        elif isinstance(other, NUMTYPES):
+        elif isinstance(other, NUMBER_TYPES):
             return True
         else:
             raise TypeError("cannot compare Polynomial with type " + str(type(other)))
@@ -231,7 +231,7 @@ class Polynomial:
             else:
                 out_polynomial.terms.sort()
                 return out_polynomial
-        elif isinstance(other, NUMTYPES):
+        elif isinstance(other, NUMBER_TYPES):
             out_polynomial = copy.deepcopy(self)
             out_polynomial.constant += other
             return out_polynomial
@@ -258,7 +258,7 @@ class Polynomial:
             return out_polynomial
         elif other == 0:
             return 0
-        elif isinstance(other, NUMTYPES):
+        elif isinstance(other, NUMBER_TYPES):
             out_polynomial = copy.deepcopy(self)
             out_polynomial.constant *= other
             out_polynomial.terms = [(x, other * y) for x, y in out_polynomial.terms]
@@ -299,20 +299,21 @@ class Polynomial:
                 subquotient = Polynomial(PLACEHOLDER)
 
                 while 0 == divmod(dividend.terms[-1][0], o_term[0])[1]:
-                    subquotient.terms = [(divmod(dividend.terms[-1][0], o_term[0])[0], dividend.terms[-1][1] / o_term[1])]
+                    subquotient.terms = [
+                        (divmod(dividend.terms[-1][0], o_term[0])[0], dividend.terms[-1][1] / o_term[1])]
                     quotient.terms = subquotient.terms + quotient.terms
                     subtrahend = other * subquotient
                     dividend -= subtrahend
                 return quotient, dividend
         elif other == 0:
             raise ZeroDivisionError("division by zero")
-        elif isinstance(other, NUMTYPES):
+        elif isinstance(other, NUMBER_TYPES):
             return 1 / other * self, 0
         else:
             raise TypeError("Cannot divide polynomial by object of type " + type(other))
 
     def __rdivmod__(self, other):
-        if isinstance(other, NUMTYPES):
+        if isinstance(other, NUMBER_TYPES):
             return 0, other
         else:
             raise TypeError("Cannot divide object of type " + type(other) + " by a polynomial.")
@@ -356,6 +357,3 @@ class Polynomial:
             out_polynomial.constant = self.constant + sum([y for x, y in out_polynomial.terms if x == 1])
             out_polynomial.terms = [(x, y) for x, y in out_polynomial.terms if x not in (0, 1)]
             return out_polynomial
-
-
-
