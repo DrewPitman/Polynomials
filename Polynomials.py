@@ -2,8 +2,9 @@ import copy
 import math
 
 PLACEHOLDER = "PLACEHOLDER"
+NUMTYPES = (int, float, complex)
 
-
+# noinspection PyTypeChecker
 class Monomial:
     def __init__(self, indeterminate):
         self.indeterminates = [indeterminate]
@@ -26,7 +27,7 @@ class Monomial:
 
     def __gt__(self, other):  # monomials are in GRevLex order
         if isinstance(other,
-                      (int, float, complex)):  # we assume that constants are never represented by Monomial objects
+                      NUMTYPES):  # we assume that constants are never represented by Monomial objects
             return True
         elif isinstance(other, Monomial):
             if self == other:
@@ -70,7 +71,7 @@ class Monomial:
             return out_monomial
         elif other == 0:
             return 0
-        elif isinstance(other, (int, float, complex)):  # multiplying a monomial by a constant
+        elif isinstance(other, NUMTYPES):  # multiplying a monomial by a constant
             return copy.deepcopy(self)
         else:
             raise TypeError("cannot multiply Monomial by type " + str(type(other)))
@@ -104,10 +105,7 @@ class Monomial:
             elif self < other:
                 return 0, copy.deepcopy(self)
             else:
-                for i in self.exponents:
-                    print(i)
                 out_exponents = {x: (self.exponents.get(x, 0) - other.exponents.get(x, 0)) for x in self.exponents}
-                print(out_exponents)
                 if [x for x in out_exponents.values() if x < 0] or [x for x in other.exponents if
                                                                     x not in self.exponents]:
                     return 0, copy.deepcopy(self)
@@ -118,7 +116,7 @@ class Monomial:
                     return out_monomial, 0
         elif other == 0:
             raise ZeroDivisionError("Cannot divide by 0")
-        elif isinstance(other, (int, float, complex)):  # divide by a constant
+        elif isinstance(other, NUMTYPES):  # divide by a constant
             return copy.deepcopy(self), 0
         else:
             raise TypeError("monomials cannot be divided by type " + str(type(other)))
@@ -126,7 +124,7 @@ class Monomial:
     def __rdivmod__(self, other):  # should only be called if we divide a number by a monomial
         if other == 0:
             return 0, 0
-        elif isinstance(other, (int, float, complex)):
+        elif isinstance(other, NUMTYPES):
             return 0, 1
         else:
             raise TypeError("Cannot divide object of type" + str(type(other)) + "by a Monomial")
@@ -169,6 +167,7 @@ class Monomial:
                     return out_monomial, out_coefficient
 
 
+# noinspection PyTypeChecker
 class Polynomial:
     def __init__(self, indeterminate):
         self.constant = 0
@@ -201,7 +200,7 @@ class Polynomial:
                         return True
                 return False
 
-        elif isinstance(other, (int, float, complex)):
+        elif isinstance(other, NUMTYPES):
             return True
         else:
             raise TypeError("cannot compare Polynomial with type " + str(type(other)))
@@ -232,7 +231,7 @@ class Polynomial:
             else:
                 out_polynomial.terms.sort()
                 return out_polynomial
-        elif isinstance(other, (int, float, complex)):
+        elif isinstance(other, NUMTYPES):
             out_polynomial = copy.deepcopy(self)
             out_polynomial.constant += other
             return out_polynomial
@@ -259,7 +258,7 @@ class Polynomial:
             return out_polynomial
         elif other == 0:
             return 0
-        elif isinstance(other, (int, float, complex)):
+        elif isinstance(other, NUMTYPES):
             out_polynomial = copy.deepcopy(self)
             out_polynomial.constant *= other
             out_polynomial.terms = [(x, other * y) for x, y in out_polynomial.terms]
@@ -288,16 +287,41 @@ class Polynomial:
             raise TypeError("Cannot raise Polynomial to a power of type " + str(type(power)))
 
     def __divmod__(self, other):
-        pass
+        if isinstance(other, Polynomial):
+            if divmod(self.terms[-1][0], other.terms[-1][0])[0] == 0:
+                return 0, self
+            else:
+                # initialize variables
+                o_term = other.get_terms()[-1]  # we always use this
+                dividend = copy.deepcopy(self)
+                quotient = Polynomial(PLACEHOLDER)
+                quotient.terms = []
+                subquotient = Polynomial(PLACEHOLDER)
+
+                while 0 == divmod(dividend.terms[-1][0], o_term[0])[1]:
+                    subquotient.terms = [(divmod(dividend.terms[-1][0], o_term[0])[0], dividend.terms[-1][1] / o_term[1])]
+                    quotient.terms = subquotient.terms + quotient.terms
+                    subtrahend = other * subquotient
+                    dividend -= subtrahend
+                return quotient, dividend
+        elif other == 0:
+            raise ZeroDivisionError("division by zero")
+        elif isinstance(other, NUMTYPES):
+            return 1 / other * self, 0
+        else:
+            raise TypeError("Cannot divide polynomial by object of type " + type(other))
 
     def __rdivmod__(self, other):
-        pass
+        if isinstance(other, NUMTYPES):
+            return 0, other
+        else:
+            raise TypeError("Cannot divide object of type " + type(other) + " by a polynomial.")
 
     def __mod__(self, other):
-        pass
+        return divmod(self, other)[1]
 
     def __rmod__(self, other):
-        pass
+        return divmod(other, self)[1]
 
     def __repr__(self):
         term_list = self.get_terms()
@@ -330,5 +354,8 @@ class Polynomial:
             out_polynomial.terms = [(x.evaluate(substitutions)[0], x.evaluate(substitutions)[1] * y)
                                     for x, y in self.terms]
             out_polynomial.constant = self.constant + sum([y for x, y in out_polynomial.terms if x == 1])
-            out_polynomial.terms = [(x,y) for x,y in out_polynomial.terms if x not in (0,1)]
+            out_polynomial.terms = [(x, y) for x, y in out_polynomial.terms if x not in (0, 1)]
             return out_polynomial
+
+
+
