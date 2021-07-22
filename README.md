@@ -1,7 +1,5 @@
 # Polynomials.py
-User friendly polynomial package.
-You can just define indeterminates and do math
-with them.
+A package for polynomials defined in terms of indeterminates.
 
 ## Monomial class
 This class handles individual monomials without coefficients,
