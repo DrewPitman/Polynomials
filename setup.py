@@ -3,10 +3,10 @@ from setuptools import setup
 setup(
     name='polynomials',
     version='0.1',
-    License='./LICENSE',
+    License='GPLv3',
     packages=['polynomials'],
-    url='https://github.com/DrewPitman/Polynomials',
+    url='https://github.com/DrewPitman/polynomials',
     author='Andrew Pitman',
     author_email='drewgpitman@gmail.com',
-    description='polynomials defined in terms of indeterminates'
+    description='Polynomials defined in terms of indeterminates'
 )
