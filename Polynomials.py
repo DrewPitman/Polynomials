@@ -79,6 +79,13 @@ class Monomial:
     def __rmul__(self, other):  # monomial multiplication is commutative
         return self * other
 
+    def __truediv__(self, other):
+        quotient, remainder = divmod(self, other)
+        if remainder == 0:
+            return quotient
+        else:
+            raise ValueError(str(self) + " is not divisible by " + str(other))
+
     def __pow__(self, power, modulo=None):
         if power == 0:
             return 1
@@ -138,33 +145,56 @@ class Monomial:
     def __hash__(self):
         return hash((tuple(self.indeterminates), tuple(self.exponents)))
 
-    def __copy__(self):
+    def __copy__(self):  # Monomials are immutable, even if their attributes aren't
         return copy.deepcopy(self)
 
     def __repr__(self):  # represent monomials in terms of common mathematical notation
         repr_list = [x + "^" + str(self.exponents[x]) if self.exponents[x] != 1 else x for x in self.indeterminates]
         return " * ".join(repr_list)
 
+    def divides(self, other):
+        return divmod(other, self)[1] == 0
+
     def evaluate(self, substitutions=None):  # returns an ordered pair with a monomial or 1 and a coefficient
         # substitutions should be a dictionary
         if substitutions is None:
             return copy.deepcopy(self), 1
-        elif not isinstance(substitutions, dict):
-            raise TypeError(
-                "'substitutions' should be of type " + str(dict) + " rather than " + str(type(substitutions)))
-        else:
+        elif isinstance(substitutions, dict):
             out_coefficient = math.prod(
-                [substitutions[x] ** self.exponents[x] for x in self.indeterminates if x in substitutions])
+                [substitutions[x] ** self.exponents[x] for x in self.indeterminates
+                 if x in substitutions and isinstance(substitutions[x], NUMBER_TYPES)])
             if out_coefficient == 0:
                 return 0, 0
             else:
                 out_monomial = Monomial(PLACEHOLDER)
+                # unchanged indeterminates
                 out_monomial.indeterminates = [x for x in self.indeterminates if x not in substitutions]
-                out_monomial.exponents = {x: self.exponents[x] for x in out_monomial.indeterminates}
+                extra_indeterminates = [substitutions[x] for x in self.indeterminates
+                                        if x in substitutions and substitutions[x] not in out_monomial.indeterminates
+                                        and isinstance(substitutions[x], str)]
+
+                # exponents of unchanged variables that are not in the image of substitutions
+                out_monomial.exponents = {x: self.exponents[x] for x in out_monomial.indeterminates
+                                          if x not in substitutions.values()}
+                # exponents of unchanged variables that are in the image of substitutions
+                shared_exponents = {substitutions[x]: (self.exponents.get(x, 0) + self.exponents[substitutions[x]])
+                                    for x in list(substitutions.keys())
+                                    if substitutions.get(x) in out_monomial.indeterminates}
+                # exponents of variables in the image of substitutions
+                # that do not overlap with the updated list of indeterminates
+                extra_exponents = {substitutions[x]: self.exponents[x] for x in self.indeterminates
+                                   if substitutions.get(x) in extra_indeterminates}
+                out_monomial.indeterminates += extra_indeterminates
+                out_monomial.exponents = {**out_monomial.exponents, **shared_exponents, **extra_exponents}
+                out_monomial.indeterminates.sort()
+
                 if not out_monomial.indeterminates:
                     return 1, out_coefficient
                 else:
                     return out_monomial, out_coefficient
+        else:
+            raise TypeError(
+                "'substitutions' should be of type " + str(dict) + " rather than " + str(type(substitutions)))
 
 
 # noinspection PyTypeChecker
@@ -269,6 +299,13 @@ class Polynomial:
     def __rmul__(self, other):
         return self * other
 
+    def __truediv__(self, other):
+        quotient, remainder = divmod(self, other)
+        if remainder == 0:
+            return quotient
+        else:
+            raise ValueError(str(self) + " is not divisible by " + str(other))
+
     def __pow__(self, power, modulo=None):
         if power == 0:
             return 1
@@ -287,33 +324,37 @@ class Polynomial:
             raise TypeError("Cannot raise Polynomial to a power of type " + str(type(power)))
 
     def __divmod__(self, other):
-        if isinstance(other, Polynomial):
+        if isinstance(other, Polynomial):  # divide polynomials
             if divmod(self.terms[-1][0], other.terms[-1][0])[0] == 0:
                 return 0, self
             else:
                 # initialize variables
-                o_term = other.get_terms()[-1]  # we always use this
+                o_term = other.get_terms()[-1]
                 dividend = copy.deepcopy(self)
-                quotient = Polynomial(PLACEHOLDER)
-                quotient.terms = []
-                subquotient = Polynomial(PLACEHOLDER)
+                quotient = 0
 
-                while 0 == divmod(dividend.terms[-1][0], o_term[0])[1]:
-                    subquotient.terms = [
-                        (divmod(dividend.terms[-1][0], o_term[0])[0], dividend.terms[-1][1] / o_term[1])]
-                    quotient.terms = subquotient.terms + quotient.terms
+                # perform long division
+                while isinstance(dividend, Polynomial) and 0 == divmod(dividend.terms[-1][0], o_term[0])[1]:
+                    subquotient_tuple = divmod(dividend.terms[-1][0], o_term[0])
+                    if isinstance(subquotient_tuple[0], Monomial):
+                        subquotient = Polynomial(PLACEHOLDER)
+                        subquotient.terms = [(subquotient_tuple[0], dividend.terms[-1][1] / o_term[1])]
+                    else:
+                        subquotient = dividend.terms[-1][1] / o_term[1]
+
+                    quotient += subquotient
                     subtrahend = other * subquotient
                     dividend -= subtrahend
                 return quotient, dividend
         elif other == 0:
             raise ZeroDivisionError("division by zero")
-        elif isinstance(other, NUMBER_TYPES):
+        elif isinstance(other, NUMBER_TYPES):  # divide polynomial by a number
             return 1 / other * self, 0
         else:
             raise TypeError("Cannot divide polynomial by object of type " + type(other))
 
     def __rdivmod__(self, other):
-        if isinstance(other, NUMBER_TYPES):
+        if isinstance(other, NUMBER_TYPES):  # divide a number by a polynomial
             return 0, other
         else:
             raise TypeError("Cannot divide object of type " + type(other) + " by a polynomial.")
@@ -327,17 +368,19 @@ class Polynomial:
     def __repr__(self):
         term_list = self.get_terms()
         repr_list = [str(abs(x[1])) + " * " + x[0].__repr__() if x[1] not in (1, -1) else x[0].__repr__()
-                     for x in term_list]  # get representations of monomials
+                     for x in term_list]  # list of representations of monomials
         repr_str = ""
-        if term_list.pop()[1] < 0:
+        if term_list.pop()[1] < 0:  # put the correct sign on the first term
             repr_str += "-"
         repr_str += repr_list.pop()
-        while repr_list:
+
+        while repr_list:  # can't use join because we have two joining characters
             if term_list.pop()[1] < 0:
                 repr_str += " - "
             else:
                 repr_str += " + "
             repr_str += str(repr_list.pop())
+        # add constant if nonzero
         if self.constant < 0:
             repr_str += " - " + str(abs(self.constant))
         elif self.constant > 0:
@@ -345,15 +388,59 @@ class Polynomial:
         return repr_str
 
     def __copy__(self):
-        return copy.deepcopy(self)
+        return copy.deepcopy(self)  # polynomials are immutable, even though their attributes aren't
 
-    def evaluate(self, substitutions=None):
+    def divides(self, other):
+        return divmod(other, self)[1] == 0
+
+    def evaluate(self, substitutions=None):  # plug in values for the indeterminates
         if substitutions is None:
             return copy.deepcopy(self)
         else:
             out_polynomial = Polynomial(PLACEHOLDER)
             out_polynomial.terms = [(x.evaluate(substitutions)[0], x.evaluate(substitutions)[1] * y)
                                     for x, y in self.terms]
+            # # print(self.terms)
+            # print(Monomial('y').evaluate({'x':1}))
             out_polynomial.constant = self.constant + sum([y for x, y in out_polynomial.terms if x == 1])
             out_polynomial.terms = [(x, y) for x, y in out_polynomial.terms if x not in (0, 1)]
+
+            def coefficient_sum(x):
+                return sum([j for i, j in out_polynomial.terms if i == x])
+
+            monomial_list = list(set([x for x, y in out_polynomial.terms]))
+            out_polynomial.terms = [(x, coefficient_sum(x)) for x in monomial_list]
+            out_polynomial.terms.sort()
             return out_polynomial
+
+    def homogenize(self, indeterminate):  # get a homogenous polynomial using indeterminate
+        # if 'indeterminate' is an indeterminate, save indeterminate to 't' as a Monomial
+        if isinstance(indeterminate, Polynomial):
+            if indeterminate.constant == 0 and len(indeterminate.terms) == 1 and indeterminate.terms[0][1] == 1 \
+                    and indeterminate.terms[0][0].get_degree() == 1:
+                t = indeterminate.terms[0][0]
+            else:
+                raise ValueError("input Polynomial is not an indeterminate")
+        elif isinstance(indeterminate, Monomial):
+            if indeterminate.get_degree() == 1:
+                t = indeterminate
+            else:
+                raise ValueError("input Monomial is not an indeterminate")
+        elif isinstance(indeterminate, str):
+            t = Monomial(indeterminate)
+        else:
+            raise TypeError("indeterminate must be a Polynomial, Monomial, or string, not an object of type "
+                            + type(indeterminate))
+
+        # multiply every term by the proper power of 't' in order to homogenize
+        out_polynomial = copy.deepcopy(self)
+        degree = out_polynomial.get_degree()
+        out_polynomial.terms = [(x * t ** (degree - x.get_degree()), y) for x, y in out_polynomial.terms]
+        out_polynomial.terms.append((t ** degree, out_polynomial.constant))
+        out_polynomial.constant = 0
+        out_polynomial.terms.sort()
+        return out_polynomial
+
+    def normalize(self):  # make the largest term of the polynomial have coefficient 1
+        return self/self.terms[-1][1]
+
