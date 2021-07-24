@@ -1,11 +1,12 @@
 from setuptools import setup
 
 setup(
-    name='Polynomials',
+    name='polynomials',
     version='0.1',
-    packages=['Polynomials'],
+    License='./LICENSE',
+    packages=['polynomials'],
     url='https://github.com/DrewPitman/Polynomials',
     author='Andrew Pitman',
     author_email='drewgpitman@gmail.com',
-    description='Polynomials defined in terms of indeterminates'
+    description='polynomials defined in terms of indeterminates'
 )
