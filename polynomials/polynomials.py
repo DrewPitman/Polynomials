@@ -1,6 +1,7 @@
 import copy
 import math
 
+# some global variables that will really help us out
 PLACEHOLDER = "PLACEHOLDER"
 NUMBER_TYPES = (int, float, complex)
 
@@ -71,12 +72,12 @@ class Monomial:
             return out_monomial
         elif other == 0:
             return 0
-        elif isinstance(other, NUMBER_TYPES):  # multiplying a monomial by a constant
+        elif isinstance(other, NUMBER_TYPES):  # multiplying a Monomial by a constant
             return copy.deepcopy(self)
         else:
             raise TypeError("cannot multiply Monomial by type " + str(type(other)))
 
-    def __rmul__(self, other):  # monomial multiplication is commutative
+    def __rmul__(self, other):  # Monomial multiplication is commutative
         return self * other
 
     def __truediv__(self, other):
@@ -128,7 +129,7 @@ class Monomial:
         else:
             raise TypeError("monomials cannot be divided by type " + str(type(other)))
 
-    def __rdivmod__(self, other):  # should only be called if we divide a number by a monomial
+    def __rdivmod__(self, other):  # should only be called if we divide a number by a Monomial
         if other == 0:
             return 0, 0
         elif isinstance(other, NUMBER_TYPES):
@@ -155,7 +156,7 @@ class Monomial:
     def divides(self, other):
         return divmod(other, self)[1] == 0
 
-    def evaluate(self, substitutions=None):  # returns an ordered pair with a monomial or 1 and a coefficient
+    def evaluate(self, substitutions=None):  # returns an ordered pair with a Monomial or 1 and a coefficient
         # substitutions should be a dictionary
         if substitutions is None:
             return copy.deepcopy(self), 1
@@ -201,7 +202,7 @@ class Monomial:
 class Polynomial:
     def __init__(self, indeterminate):
         self.constant = 0
-        self.terms = [(Monomial(indeterminate), 1)]  # list of terms of the form (monomial, coefficient)
+        self.terms = [(Monomial(indeterminate), 1)]  # list of terms of the form (Monomial, coefficient)
 
     def get_degree(self):
         return self.terms[-1][0].get_degree()
@@ -266,7 +267,7 @@ class Polynomial:
             out_polynomial.constant += other
             return out_polynomial
         else:
-            raise TypeError("Cannot add polynomial to an object of type " + str(type(other)))
+            raise TypeError("Cannot add Polynomial to an object of type " + str(type(other)))
 
     def __radd__(self, other):
         return self + other
@@ -294,7 +295,7 @@ class Polynomial:
             out_polynomial.terms = [(x, other * y) for x, y in out_polynomial.terms]
             return out_polynomial
         else:
-            raise TypeError("cannot multiply polynomial by object of type " + str(type(other)))
+            raise TypeError("cannot multiply Polynomial by object of type " + str(type(other)))
 
     def __rmul__(self, other):
         return self * other
@@ -348,16 +349,16 @@ class Polynomial:
                 return quotient, dividend
         elif other == 0:
             raise ZeroDivisionError("division by zero")
-        elif isinstance(other, NUMBER_TYPES):  # divide polynomial by a number
+        elif isinstance(other, NUMBER_TYPES):  # divide Polynomial by a number
             return 1 / other * self, 0
         else:
-            raise TypeError("Cannot divide polynomial by object of type " + type(other))
+            raise TypeError("Cannot divide Polynomial by object of type " + type(other))
 
     def __rdivmod__(self, other):
-        if isinstance(other, NUMBER_TYPES):  # divide a number by a polynomial
+        if isinstance(other, NUMBER_TYPES):  # divide a number by a Polynomial
             return 0, other
         else:
-            raise TypeError("Cannot divide object of type " + type(other) + " by a polynomial.")
+            raise TypeError("Cannot divide object of type " + type(other) + " by a Polynomial.")
 
     def __mod__(self, other):
         return divmod(self, other)[1]
@@ -413,7 +414,7 @@ class Polynomial:
             out_polynomial.terms.sort()
             return out_polynomial
 
-    def homogenize(self, indeterminate):  # get a homogenous polynomial using indeterminate
+    def homogenize(self, indeterminate):  # get a homogenous Polynomial using indeterminate
         # if 'indeterminate' is an indeterminate, save indeterminate to 't' as a Monomial
         if isinstance(indeterminate, Polynomial):
             if indeterminate.constant == 0 and len(indeterminate.terms) == 1 and indeterminate.terms[0][1] == 1 \
@@ -436,10 +437,11 @@ class Polynomial:
         out_polynomial = copy.deepcopy(self)
         degree = out_polynomial.get_degree()
         out_polynomial.terms = [(x * t ** (degree - x.get_degree()), y) for x, y in out_polynomial.terms]
-        out_polynomial.terms.append((t ** degree, out_polynomial.constant))
+        if out_polynomial.constant != 0:
+            out_polynomial.terms.append((t ** degree, out_polynomial.constant))
         out_polynomial.constant = 0
         out_polynomial.terms.sort()
         return out_polynomial
 
-    def normalize(self):  # make the largest term of the polynomial have coefficient 1
+    def normalize(self):  # make the largest term of the Polynomial have coefficient 1
         return self / self.terms[-1][1]
