@@ -442,5 +442,4 @@ class Polynomial:
         return out_polynomial
 
     def normalize(self):  # make the largest term of the polynomial have coefficient 1
-        return self/self.terms[-1][1]
-
+        return self / self.terms[-1][1]
