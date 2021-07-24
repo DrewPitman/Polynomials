@@ -283,7 +283,6 @@ class Polynomial:
             out_polynomial = self.constant * other
             iter_polynomial = Polynomial(PLACEHOLDER)
             for x in self.terms:
-                iter_polynomial.constant = x[1] * other.constant
                 iter_polynomial.terms = [(x[0] * a, x[1] * b) for a, b in other.get_terms()]
                 out_polynomial += iter_polynomial
             return out_polynomial
