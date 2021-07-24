@@ -40,4 +40,8 @@ The purpose of this is so that users can make polynomials by first defining
 indeterminates then operating on them with addition, multiplication, and 
 exponentiation.
 
+### evaluate()
+use Monomial.evaluate() or Polynomial.evaluate() to
+* evaluate objects for given values of some indeterminates
+* substitute some indeterminates for others
 
