@@ -502,4 +502,7 @@ class Polynomial:
             p.constant = 0
         p.terms = [(x, y) for x, y in term_list if isinstance(x, Monomial)]
 
-        return p
+        if p.terms:
+            return p
+        else:
+            return p.constant
